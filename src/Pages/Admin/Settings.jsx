@@ -36,12 +36,12 @@ export default function Settings() {
         });
       } else {
         // Fallback if browser doesn't support file sharing
-        const text = `Here is the QR code for our certificates portal:\n${settings.qr_url}`;
+        const text = `Here is the QR code for our certificates portal:\n${window.location.origin}\n\nDirect QR Link: ${settings.qr_url}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
       }
     } catch (error) {
       console.error('Error sharing:', error);
-      const text = `Here is the QR code for our certificates portal:\n${settings.qr_url}`;
+      const text = `Here is the QR code for our certificates portal:\n${window.location.origin}\n\nDirect QR Link: ${settings.qr_url}`;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
   };

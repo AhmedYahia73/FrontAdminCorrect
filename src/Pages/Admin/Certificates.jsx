@@ -80,11 +80,12 @@ export default function Certificates() {
           files: [file],
         });
       } else {
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        const fallbackText = `${text}\n\nQR Code Image: ${cert.qr_url}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(fallbackText)}`, '_blank');
       }
     } catch (error) {
       console.error('Error sharing:', error);
-      const text = `New certificate issued:\nCompany: ${cert.company_name}\nCertificate: ${cert.certificate_name}\n\nLink: ${window.location.origin}/certificate/${cert.id}`;
+      const text = `New certificate issued:\nCompany: ${cert.company_name}\nCertificate: ${cert.certificate_name}\n\nLink: ${window.location.origin}/certificate/${cert.id}\n\nQR Code Image: ${cert.qr_url}`;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
   };
