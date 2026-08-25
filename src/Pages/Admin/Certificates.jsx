@@ -68,7 +68,9 @@ export default function Certificates() {
   const handleShare = async (cert, e) => {
     if(e) e.stopPropagation();
     try {
-      const response = await fetch(cert.qr_url);
+      // Force https to avoid mixed-content block (frontend is https, backend URL may be http)
+      const secureQrUrl = cert.qr_url.replace(/^http:\/\//i, 'https://');
+      const response = await fetch(secureQrUrl);
       const blob = await response.blob();
       const file = new File([blob], `${cert.certificate_name}_qr.png`, { type: blob.type });
       const text = `New certificate issued:\nCompany: ${cert.company_name}\nCertificate: ${cert.certificate_name}\n\nLink: ${window.location.origin}/certificate/${cert.id}`;
@@ -80,12 +82,11 @@ export default function Certificates() {
           files: [file],
         });
       } else {
-        const fallbackText = `${text}\n\nQR Code Image: ${cert.qr_url}`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(fallbackText)}`, '_blank');
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
       }
     } catch (error) {
       console.error('Error sharing:', error);
-      const text = `New certificate issued:\nCompany: ${cert.company_name}\nCertificate: ${cert.certificate_name}\n\nLink: ${window.location.origin}/certificate/${cert.id}\n\nQR Code Image: ${cert.qr_url}`;
+      const text = `New certificate issued:\nCompany: ${cert.company_name}\nCertificate: ${cert.certificate_name}\n\nLink: ${window.location.origin}/certificate/${cert.id}`;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
   };

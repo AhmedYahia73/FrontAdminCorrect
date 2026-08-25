@@ -6,7 +6,8 @@ export default function Settings() {
   
   const handleDownload = async () => {
     try {
-      const response = await fetch(settings.qr_url);
+      const secureUrl = settings.qr_url.replace(/^http:\/\//i, 'https://');
+      const response = await fetch(secureUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -24,7 +25,8 @@ export default function Settings() {
 
   const handleShare = async () => {
     try {
-      const response = await fetch(settings.qr_url);
+      const secureUrl = settings.qr_url.replace(/^http:\/\//i, 'https://');
+      const response = await fetch(secureUrl);
       const blob = await response.blob();
       const file = new File([blob], 'project_qr_code.png', { type: blob.type });
 
