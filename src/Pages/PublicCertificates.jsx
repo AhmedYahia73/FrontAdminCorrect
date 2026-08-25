@@ -77,18 +77,16 @@ export default function PublicCertificates() {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground leading-tight mb-1">{cert.certificate_name}</h3>
-                        <p className="text-sm text-muted-foreground">{cert.company_name}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center justify-between gap-y-3 mt-auto pt-4 border-t border-border/50">
-                      <div className="flex items-center gap-2">
-                        <a href={cert.qr_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="w-12 h-12 border-2 border-primary/10 rounded p-1 bg-white hover:border-primary transition-colors cursor-zoom-in block" title="View QR Fullscreen">
-                          <img src={cert.qr_url} alt="QR" className="w-full h-full object-contain" />
-                        </a>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium text-muted-foreground">Date</span>
-                          <span className="text-sm font-medium">{new Date(cert.date).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1.5 font-medium">
+                          <span className="flex items-center gap-1 text-primary/80">
+                            <span className="material-symbols-outlined text-[16px]">domain</span>
+                            {cert.company_name}
+                          </span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-border"></span>
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[16px]">calendar_today</span>
+                            {new Date(cert.date).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
                     </div>

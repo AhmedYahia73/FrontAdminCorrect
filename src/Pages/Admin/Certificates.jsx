@@ -65,6 +65,30 @@ export default function Certificates() {
       deleteMutation.mutate(id);
     }
   };
+  const handleShare = async (cert, e) => {
+    if(e) e.stopPropagation();
+    try {
+      const response = await fetch(cert.qr_url);
+      const blob = await response.blob();
+      const file = new File([blob], `${cert.certificate_name}_qr.png`, { type: blob.type });
+      const text = `New certificate issued:\nCompany: ${cert.company_name}\nCertificate: ${cert.certificate_name}\n\nLink: ${window.location.origin}/certificate/${cert.id}`;
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: cert.certificate_name,
+          text: text,
+          files: [file],
+        });
+      } else {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      const text = `New certificate issued:\nCompany: ${cert.company_name}\nCertificate: ${cert.certificate_name}\n\nLink: ${window.location.origin}/certificate/${cert.id}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+  };
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -113,7 +137,17 @@ export default function Certificates() {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground leading-tight mb-1">{cert.certificate_name}</h3>
-                    <p className="text-sm text-muted-foreground">{cert.company_name}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1.5 font-medium">
+                      <span className="flex items-center gap-1 text-primary/80">
+                        <span className="material-symbols-outlined text-[16px]">domain</span>
+                        {cert.company_name}
+                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-border"></span>
+                      <span className="flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">calendar_today</span>
+                        {new Date(cert.date).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
@@ -122,19 +156,10 @@ export default function Certificates() {
                     <a href={cert.qr_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="w-12 h-12 border-2 border-primary/10 rounded p-1 bg-white hover:border-primary transition-colors cursor-zoom-in block" title="View QR Fullscreen">
                       <img src={cert.qr_url} alt="QR" className="w-full h-full object-contain" />
                     </a>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-medium  text-muted-foreground">Date</span>
-                      <span className="text-sm  font-medium">{new Date(cert.date).toLocaleDateString()}</span>
-                    </div>
                   </div>
                   
                   <div className="flex gap-2">
-                    <button onClick={(e) => {
-                      e.stopPropagation();
-                      const url = `${window.location.origin}/certificate/${cert.id}`;
-                      const text = `New certificate issued:\nCompany: ${cert.company_name}\nCertificate: ${cert.certificate_name}\n\nLink: ${url}`;
-                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                    }} className="w-8 h-8 flex items-center justify-center rounded border border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors shrink-0" title="Share via WhatsApp">
+                    <button onClick={(e) => handleShare(cert, e)} className="w-8 h-8 flex items-center justify-center rounded border border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors shrink-0" title="Share via WhatsApp">
                       <span className="material-symbols-outlined text-[18px]">share</span>
                     </button>
                     <button onClick={(e) => openEditModal(cert, e)} className="w-8 h-8 flex items-center justify-center rounded border border-primary text-primary hover:bg-primary hover:text-white transition-colors shrink-0" title="Edit">
