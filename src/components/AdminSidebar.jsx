@@ -173,7 +173,7 @@ export const AdminSidebar = ({ isOpen, onClose }) => {
           <span className="admin-sidebar__link-text">Logout</span>
         </button>
 
-        <div className="admin-sidebar__user">
+        <div className="admin-sidebar__user cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors -ml-2" onClick={() => navigate('/admin/profile')}>
           <div className="admin-sidebar__avatar">
             {userName.charAt(0).toUpperCase()}
           </div>

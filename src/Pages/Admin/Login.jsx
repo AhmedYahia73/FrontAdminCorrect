@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
   const { settings, isLoading } = useSettings();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   
@@ -62,12 +63,21 @@ export default function Login() {
 
             <div>
               <label className="block text-sm font-medium text-foreground text-sm font-medium">Password</label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   {...register('password', { required: 'Password is required' })}
-                  className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm text-base"
+                  className="appearance-none block w-full px-3 py-2 pr-10 border border-border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm text-base"
                 />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground flex items-center justify-center"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    {showPassword ? "visibility_off" : "visibility"}
+                  </span>
+                </button>
                 {errors.password && <span className="text-destructive text-sm mt-1 block">{errors.password.message}</span>}
               </div>
             </div>

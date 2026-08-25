@@ -85,6 +85,15 @@ export default function AdminLayout() {
               </>
             )}
           </NavLink>
+          
+          <NavLink to="/admin/profile" className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer font-medium ${isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
+            {({ isActive }) => (
+              <>
+                <span className="material-symbols-outlined text-[20px]" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>account_circle</span>
+                <span>Profile</span>
+              </>
+            )}
+          </NavLink>
         </nav>
 
         <div className="p-4 border-t border-border mt-auto">
@@ -143,6 +152,14 @@ export default function AdminLayout() {
             <>
               <span className="material-symbols-outlined mb-1" style={isActive ? {fontVariationSettings: "'FILL' 1"} : {}}>group</span>
               <span>Users</span>
+            </>
+          )}
+        </NavLink>
+        <NavLink to="/admin/profile" className={({isActive}) => `flex flex-col items-center justify-center rounded-lg px-4 py-1 text-xs font-medium  active:scale-90 transition-transform ${isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'}`}>
+          {({ isActive }) => (
+            <>
+              <span className="material-symbols-outlined mb-1" style={isActive ? {fontVariationSettings: "'FILL' 1"} : {}}>account_circle</span>
+              <span>Profile</span>
             </>
           )}
         </NavLink>

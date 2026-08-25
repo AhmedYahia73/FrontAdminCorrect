@@ -47,10 +47,15 @@ export const Navbar = ({ toggleSidebar }) => {
 
       {/* قسم المستخدم وتسجيل الخروج */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/admin/profile')}
+          className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-primary"
+        >
           <User className="w-4 h-4" />
-          <span> Hello , {userName}</span>
-        </div>
+          <span>Hello, {userName}</span>
+        </Button>
         
         <Button 
           variant="ghost" 

@@ -5,6 +5,7 @@ import Certificates from '../Pages/Admin/Certificates';
 import CertificateDetails from '../Pages/Admin/CertificateDetails';
 import Settings from '../Pages/Admin/Settings';
 import Admins from '../Pages/Admin/Admins';
+import Profile from '../Pages/Admin/Profile';
 import PublicCertificates from '../Pages/PublicCertificates';
 import PublicCertificateDetails from '../Pages/PublicCertificateDetails';
 import { isAuthenticated } from '../utils/auth';
@@ -60,6 +61,10 @@ export const router = createBrowserRouter([
       {
         path: 'users',
         element: <Admins />,
+      },
+      {
+        path: 'profile',
+        element: <Profile />,
       },
     ],
   },

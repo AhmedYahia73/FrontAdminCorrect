@@ -13,6 +13,8 @@ export default function Admins() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -117,9 +119,11 @@ export default function Admins() {
                           <button onClick={() => openEditModal(admin)} className="w-8 h-8 flex items-center justify-center rounded border border-primary text-primary hover:bg-primary hover:text-white transition-colors" title="Edit">
                             <span className="material-symbols-outlined text-[18px]">edit</span>
                           </button>
-                          <button onClick={() => handleDelete(admin.id)} className="w-8 h-8 flex items-center justify-center rounded border border-destructive text-destructive hover:bg-destructive hover:text-white transition-colors" title="Delete">
-                            <span className="material-symbols-outlined text-[18px]">delete</span>
-                          </button>
+                          {admin.id !== currentUser.id && (
+                            <button onClick={() => handleDelete(admin.id)} className="w-8 h-8 flex items-center justify-center rounded border border-destructive text-destructive hover:bg-destructive hover:text-white transition-colors" title="Delete">
+                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -170,6 +174,7 @@ export default function Admins() {
 
 function AdminModal({ admin, onClose }) {
   const queryClient = useQueryClient();
+  const [showPassword, setShowPassword] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     defaultValues: admin ? {
       name: admin.name,
@@ -198,7 +203,7 @@ function AdminModal({ admin, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-xl p-6 w-full max-w-md border border-border">
+      <div className="bg-card rounded-xl p-6 w-full max-w-md border border-border max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-6 text-foreground">{admin ? 'Edit Administrator' : 'Add Administrator'}</h2>
         <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
           <div>
@@ -230,7 +235,7 @@ function AdminModal({ admin, onClose }) {
             <label className="block text-sm font-medium mb-1 text-foreground">Role</label>
             <select 
               {...register('role', { required: 'Required' })} 
-              className="w-full border border-border rounded-lg p-2 focus:ring-1 focus:ring-primary outline-none"
+              className="w-full border border-border rounded-lg p-2 focus:ring-1 focus:ring-primary outline-none bg-background"
             >
               <option value="admin">Admin</option>
               <option value="user">User</option>
@@ -242,11 +247,22 @@ function AdminModal({ admin, onClose }) {
             <label className="block text-sm font-medium mb-1 text-foreground">
               {admin ? 'Password (leave blank to keep current)' : 'Password'}
             </label>
-            <input 
-              type="password"
-              {...register('password', { required: !admin ? 'Required' : false })} 
-              className="w-full border border-border rounded-lg p-2 focus:ring-1 focus:ring-primary outline-none" 
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"}
+                {...register('password', { required: !admin ? 'Required' : false })} 
+                className="w-full border border-border rounded-lg p-2 pr-10 focus:ring-1 focus:ring-primary outline-none" 
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  {showPassword ? "visibility_off" : "visibility"}
+                </span>
+              </button>
+            </div>
             {errors.password && <span className="text-destructive text-xs mt-1">{errors.password.message}</span>}
           </div>
           <div className="flex gap-2 justify-end mt-6">
@@ -260,3 +276,4 @@ function AdminModal({ admin, onClose }) {
     </div>
   );
 }
+
