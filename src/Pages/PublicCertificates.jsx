@@ -98,12 +98,25 @@ export default function PublicCertificates() {
         >
           <ul className="flex items-center justify-center list-none m-0 w-full h-full" style={{ paddingLeft: 80 }}>
             {NAV_LINKS.map(({ label, href, active }) => (
-              <li key={label} className="relative h-full" style={{ listStyle: 'none' }}>
+              <li
+                key={label}
+                className="h-full flex items-center"
+                style={{
+                  listStyle: 'none',
+                  position: 'relative',
+                  /* Orange bar via background-image — not affected by clip-path */
+                  backgroundImage: 'linear-gradient(#ff9018, #ff9018)',
+                  backgroundSize: (active || hoveredNav === label) ? '100% 5px' : '0% 5px',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'left top',
+                  transition: 'background-size 0.28s ease',
+                }}
+                onMouseEnter={() => setHoveredNav(label)}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <a
                   href={href}
-                  onMouseEnter={() => setHoveredNav(label)}
-                  onMouseLeave={() => setHoveredNav(null)}
-                  className="relative flex items-center justify-center h-full no-underline font-semibold tracking-[0.3px] transition-colors"
+                  className="flex items-center justify-center h-full no-underline font-semibold tracking-[0.3px] transition-colors"
                   style={{
                     fontSize: 16,
                     padding: '0',
@@ -112,16 +125,6 @@ export default function PublicCertificates() {
                     color: (active || hoveredNav === label) ? '#ffffff' : 'rgba(255,255,255,0.85)',
                   }}
                 >
-                  {/* Top orange bar — top:-10px like original #menu_header_3 > .cz > a:before */}
-                  <span style={{
-                    position: 'absolute',
-                    top: '-10px',
-                    left: 0,
-                    height: '5px',
-                    backgroundColor: '#ff9018',
-                    width: (active || hoveredNav === label) ? '100%' : '0%',
-                    transition: 'width 0.28s ease',
-                  }} />
                   {label}
                 </a>
               </li>
