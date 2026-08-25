@@ -3,95 +3,150 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/axios';
 
+const NAV_LINKS = [
+  { label: 'HOME',        href: 'https://correctsolution.net/' },
+  { label: 'ABOUT',       href: 'https://correctsolution.net/about-us/' },
+  { label: 'SERVICES',    href: 'https://correctsolution.net/services/' },
+  { label: 'TRAINING',    href: '#' },
+  { label: 'CAREER',      href: 'https://correctsolution.net/career/' },
+  { label: 'CONTACT',     href: 'https://correctsolution.net/contact-us/' },
+  { label: 'CERTIFICATE', href: '#', active: true },
+];
+
 export default function PublicCertificates() {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [page, setPage]                       = useState(1);
+  const [search, setSearch]                   = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen]   = useState(false);
 
-  // Debounce search input
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1); // Reset to page 1 on new search
-    }, 500);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 500);
+    return () => clearTimeout(t);
   }, [search]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['public-certificates', page, debouncedSearch],
     queryFn: async () => {
       const res = await apiClient.get('/admin/certificate', {
-        params: { page, limit: 12, search: debouncedSearch }
+        params: { page, limit: 12, search: debouncedSearch },
       });
       return res.data?.data || { certificates: [], pagination: { totalPages: 1 } };
     },
     keepPreviousData: true,
   });
 
-  const certsData = Array.isArray(data) ? data : data?.certificates || [];
+  const certsData  = Array.isArray(data) ? data : data?.certificates || [];
   const totalPages = data?.pagination?.totalPages || 1;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col font-['Raleway',sans-serif]">
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800;900&display=swap');
-          
-          @keyframes slideRight {
-            0% { opacity: 0; transform: translateX(-30px); clip-path: inset(0 100% 0 0); }
-            100% { opacity: 1; transform: translateX(0); clip-path: inset(0 0 0 0); }
-          }
-          .animate-slide-right {
-            animation: slideRight 1.5s cubic-bezier(0.77, 0, 0.175, 1) forwards;
-          }
-        `}
-      </style>
+    <div className="min-h-screen flex flex-col" style={{ fontFamily: 'Raleway, sans-serif' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800;900&display=swap');
 
-      {/* Header Top */}
-      <div className="container mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
-        <a href="https://correctsolution.net/">
-          <img src="https://correctsolution.net/wp-content/uploads/2019/12/logo-02-1.png" alt="Correct Solution" className="w-[180px] h-auto" />
-        </a>
-        <div className="flex flex-col sm:flex-row gap-6 text-[#0e689c] font-medium text-[15px]">
-          <a href="mailto:Info@correctsolution.net" className="flex items-center gap-2 hover:text-[#ff9018] transition-colors">
-            <span className="material-symbols-outlined text-[22px]">mail</span>
-            Info@correctsolution.net
+        @keyframes blockFromLeft {
+          0%   { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(-15px); }
+          100% { opacity: 1; clip-path: inset(0 0% 0 0);   transform: translateX(0); }
+        }
+        .slide-in { animation: blockFromLeft 1.2s cubic-bezier(0.77,0,0.175,1) 0.2s both; }
+
+        .nav-link::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0;
+          height: 5px;
+          background: #ff9018;
+          width: 0;
+          transition: width 0.28s ease;
+        }
+        .nav-link:hover::before,
+        .nav-link.is-active::before { width: 100%; }
+        .nav-link:hover { color: #fff !important; }
+      `}</style>
+
+      {/* ─────────────────────────────────────────────
+          DESKTOP HEADER  (header_2)
+      ───────────────────────────────────────────── */}
+      <div className="hidden lg:block bg-white h-[65px] relative z-50">
+        <div className="max-w-[1200px] mx-auto px-5 pt-10 flex justify-between items-center h-full">
+          <a href="https://correctsolution.net/" className="block" style={{ marginTop: 5, marginBottom: 0 }}>
+            <img src="https://correctsolution.net/wp-content/uploads/2019/12/logo-02-1.png" alt="Correct Solution" style={{ width: 180 }} />
           </a>
-          <a href="tel:01002220108" className="flex items-center gap-2 hover:text-[#ff9018] transition-colors">
-            <span className="material-symbols-outlined text-[22px]">call</span>
-            +201002220108
-          </a>
+
+          <div className="flex items-center" style={{ marginTop: 0, marginBottom: 45 }}>
+            <a href="mailto:Info@correctsolution.net" className="flex items-center gap-[5px] no-underline font-medium text-[15px] text-[#0e689c] hover:text-[#ff9018] transition-colors" style={{ marginRight: 10 }}>
+              <i className="fa-regular fa-envelope" style={{ fontSize: '22px', marginRight: '5px' }}></i> Info@correctsolution.net
+            </a>
+            <a href="tel:+201002220108" className="flex items-center gap-[5px] no-underline font-medium text-[15px] text-[#0e689c] hover:text-[#ff9018] transition-colors" style={{ marginRight: 30 }}>
+              <i className="fa-solid fa-phone-volume" style={{ fontSize: '20px', marginRight: '5px' }}></i> +201002220108
+            </a>
+          </div>
         </div>
       </div>
 
-      {/* Navbar - matching header_3 design with skewed left edge */}
-      <div className="relative flex justify-end overflow-hidden">
-        {/* The skewed blue nav section */}
-        <div className="relative bg-[#0e689c] flex items-center" style={{clipPath: 'polygon(40px 0%, 100% 0%, 100% 100%, 0% 100%)'}}>
-          <ul className="flex items-center pl-16 pr-6">
-            {[
-              { label: 'HOME', href: 'https://correctsolution.net/' },
-              { label: 'ABOUT', href: 'https://correctsolution.net/about-us/' },
-              { label: 'SERVICES', href: 'https://correctsolution.net/services/' },
-              { label: 'TRAINING', href: '#' },
-              { label: 'CAREER', href: 'https://correctsolution.net/career/' },
-              { label: 'CONTACT', href: 'https://correctsolution.net/contact-us/' },
-              { label: 'CERTIFICATE', href: '#', active: true },
-            ].map(({ label, href, active }) => (
-              <li key={label} className="nav-item-3 relative group">
+      {/* ─────────────────────────────────────────────
+          DESKTOP NAVBAR  (header_3)
+      ───────────────────────────────────────────── */}
+      <div 
+        className="hidden lg:flex relative justify-end z-40 pointer-events-none"
+        style={{ marginTop: '-10px', marginBottom: '-40px' }}
+      >
+        <nav
+          className="bg-[#0e689c] flex items-center w-full max-w-[1100px] pointer-events-auto h-20"
+          style={{ clipPath: 'polygon(75px 0%, 100% 0%, 100% 100%, 0% 100%)' }}
+        >
+          <ul className="flex items-center list-none m-0" style={{ paddingLeft: 80, paddingRight: 20 }}>
+            {NAV_LINKS.map(({ label, href, active }) => (
+              <li key={label} className="relative">
                 <a
                   href={href}
-                  className={`relative block px-4 py-5 text-[15px] font-semibold tracking-wide transition-colors duration-200 ${
-                    active ? 'text-white' : 'text-white/85 hover:text-white'
-                  }`}
+                  className={`nav-link relative block no-underline font-semibold tracking-[0.3px] text-white/85 ${active ? 'is-active !text-white' : ''}`}
+                  style={{ fontSize: 16, padding: '24px 0', marginLeft: 16, marginRight: 16 }}
                 >
-                  {/* Orange top bar */}
-                  <span
-                    className={`absolute top-0 left-0 h-[5px] bg-[#ff9018] transition-all duration-300 ${
-                      active ? 'w-full' : 'w-0 group-hover:w-full'
-                    }`}
-                  />
+                  {label}
+                </a>
+              </li>
+            ))}
+            {/* Search Icon */}
+            <li className="relative ml-4">
+              <a href="#" className="text-white hover:text-[#ff9018] transition-colors">
+                <i className="fa-solid fa-search" style={{ fontSize: '20px' }}></i>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+      {/* ─────────────────────────────────────────────
+          MOBILE HEADER
+      ───────────────────────────────────────────── */}
+      <div className="lg:hidden bg-[#0e689c] relative z-50 shadow-md">
+        <div className="flex justify-between items-center px-4 py-3">
+          <a href="https://correctsolution.net/" className="block bg-white p-2 rounded">
+            <img src="https://correctsolution.net/wp-content/uploads/2019/12/logo-02-1.png" alt="Correct Solution" style={{ width: 130 }} />
+          </a>
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+            className="text-white hover:text-[#ff9018] transition-colors focus:outline-none"
+          >
+            {mobileMenuOpen ? (
+              <i className="fa-solid fa-times text-[32px]"></i>
+            ) : (
+              <i className="fa-solid fa-bars text-[28px]"></i>
+            )}
+          </button>
+        </div>
+        
+        {/* Mobile Dropdown Menu */}
+        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-96' : 'max-h-0'}`}>
+          <ul className="flex flex-col list-none m-0 p-0 border-t border-white/10 bg-[#0b547d]">
+            {NAV_LINKS.map(({ label, href, active }) => (
+              <li key={label} className="border-b border-white/5 last:border-0">
+                <a
+                  href={href}
+                  className={`block px-6 py-4 font-semibold tracking-[0.3px] ${active ? 'text-[#ff9018]' : 'text-white/85'} hover:bg-black/10`}
+                  style={{ fontSize: 15 }}
+                >
                   {label}
                 </a>
               </li>
@@ -100,39 +155,48 @@ export default function PublicCertificates() {
         </div>
       </div>
 
-      {/* Slider / Hero */}
-      <div className="relative w-full h-[400px] md:h-[570px] bg-[#01131c] flex items-center overflow-hidden">
-        <img 
-          src="https://correctsolution.net/wp-content/uploads/2019/11/slide1.jpg" 
-          alt="Slider Background" 
-          className="absolute inset-0 w-full h-full object-cover opacity-60 scale-105" 
+      {/* ─────────────────────────────────────────────
+          HERO / SLIDER
+      ───────────────────────────────────────────── */}
+      <div className="relative w-full overflow-hidden flex-shrink-0" style={{ height: 'auto', minHeight: 400, backgroundColor: '#01131c' }}>
+        <img
+          src="https://correctsolution.net/wp-content/uploads/2019/11/slide1.jpg"
+          alt="Hero"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.65, transform: 'scale(1.06)' }}
         />
-        <div className="container mx-auto px-4 sm:px-12 relative z-10">
-          <h1 className="text-white text-5xl md:text-[60px] font-extrabold uppercase leading-tight tracking-wide font-['Raleway']">
-            <span className="block animate-slide-right opacity-0" style={{ animationDelay: '0.2s' }}>CERTIFICATE</span>
+        <div className="absolute inset-0" style={{ background: 'rgba(1,19,28,0.2)' }} />
+
+        <div className="relative z-10 max-w-[1200px] mx-auto pt-[140px] lg:pt-[190px] pb-[80px] lg:pb-[120px] px-6 lg:px-[50px]">
+          <h1
+            className="slide-in m-0 text-white uppercase text-[36px] lg:text-[46px]"
+            style={{ fontWeight: 700, fontFamily: 'Raleway, sans-serif', letterSpacing: 1, lineHeight: 1.15 }}
+          >
+            CERTIFICATE
           </h1>
         </div>
       </div>
 
-      {/* Certificates Content */}
-      <div className="flex-grow p-6 bg-[#f9fafb]">
-        <div className="max-w-7xl mx-auto space-y-8 mt-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+      {/* ─────────────────────────────────────────────
+          CERTIFICATES CONTENT
+      ───────────────────────────────────────────── */}
+      <div className="flex-grow bg-[#f9fafb] p-4 md:p-6">
+        <div className="max-w-7xl mx-auto space-y-6 md:mt-6">
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 md:p-6 rounded-xl border border-gray-200 shadow-sm">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Verified Certificates</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800">Verified Certificates</h2>
               <p className="text-sm text-gray-500 mt-1">Search and view officially issued certificates.</p>
             </div>
-            <div className="w-full sm:w-72">
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">search</span>
-                <input
-                  type="text"
-                  placeholder="Search certificates..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg bg-white focus:ring-1 focus:ring-[#0e689c] outline-none transition-shadow"
-                />
-              </div>
+            <div className="relative w-full sm:w-72">
+              <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]"></i>
+              <input
+                type="text"
+                placeholder="Search certificates..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-2 border border-gray-200 rounded-lg bg-white focus:ring-1 focus:ring-[#0e689c] outline-none transition-shadow text-sm"
+              />
             </div>
           </div>
 
@@ -140,66 +204,55 @@ export default function PublicCertificates() {
             <div className="text-center py-10 text-gray-500">Loading...</div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6">
-                {certsData.length > 0 ? (
-                  certsData.map((cert) => (
-                    <div 
-                      key={cert.id} 
-                      onClick={() => navigate(`/certificate/${cert.id}`)}
-                      className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col relative overflow-hidden hover:shadow-md transition-all cursor-pointer group"
-                    >
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#0e689c]/10 to-transparent -z-10 rounded-tr-xl"></div>
-                      
-                      {cert.images_urls && cert.images_urls.length > 0 && (
-                        <div className="w-full h-40 mb-4 rounded-lg overflow-hidden border border-gray-200">
-                          <img src={cert.images_urls[0]} alt="Certificate Cover" className="w-full h-full object-cover" />
-                        </div>
-                      )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+                {certsData.length > 0 ? certsData.map(cert => (
+                  <div
+                    key={cert.id}
+                    onClick={() => navigate(`/certificate/${cert.id}`)}
+                    className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col relative overflow-hidden hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#0e689c]/10 to-transparent -z-10 rounded-tr-xl" />
 
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-800 leading-tight mb-1">{cert.certificate_name}</h3>
-                          <div className="flex items-center gap-2 text-sm text-gray-500 mt-1.5 font-medium">
-                            <span className="flex items-center gap-1 text-[#0e689c]/90">
-                              <span className="material-symbols-outlined text-[16px]">domain</span>
-                              {cert.company_name}
-                            </span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                            <span className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[16px]">calendar_today</span>
-                              {new Date(cert.date).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
+                    {cert.images_urls?.length > 0 && (
+                      <div className="w-full h-40 mb-4 rounded-lg overflow-hidden border border-gray-200">
+                        <img src={cert.images_urls[0]} alt="Certificate" className="w-full h-full object-cover" />
                       </div>
+                    )}
+
+                    <h3 className="text-[17px] font-semibold text-gray-800 leading-snug mb-2">{cert.certificate_name}</h3>
+                    <div className="flex items-center gap-2 text-[13px] text-gray-500 flex-wrap">
+                      <span className="flex items-center gap-1 text-[#0e689c]">
+                        <i className="fa-regular fa-building text-[14px]"></i>
+                        {cert.company_name}
+                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+                      <span className="flex items-center gap-1">
+                        <i className="fa-regular fa-calendar-alt text-[14px]"></i>
+                        {new Date(cert.date).toLocaleDateString()}
+                      </span>
                     </div>
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12 text-gray-500">
-                    No certificates found.
                   </div>
+                )) : (
+                  <div className="col-span-full text-center py-12 text-gray-500">No certificates found.</div>
                 )}
               </div>
 
-              {/* Pagination Controls */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8 pb-12">
+                <div className="flex items-center justify-center gap-2 mt-8 pb-8">
                   <button
                     disabled={page === 1}
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                    <i className="fa-solid fa-chevron-left text-[16px]"></i>
                   </button>
-                  <span className="text-sm font-medium text-gray-500">
-                    Page {page} of {totalPages}
-                  </span>
+                  <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
                   <button
                     disabled={page === totalPages}
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                    <i className="fa-solid fa-chevron-right text-[16px]"></i>
                   </button>
                 </div>
               )}
@@ -207,6 +260,7 @@ export default function PublicCertificates() {
           )}
         </div>
       </div>
+
     </div>
   );
 }
