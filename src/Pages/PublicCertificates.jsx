@@ -19,6 +19,7 @@ export default function PublicCertificates() {
   const [search, setSearch]                   = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen]   = useState(false);
+  const [hoveredNav, setHoveredNav]           = useState(null);
 
   React.useEffect(() => {
     const t = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 500);
@@ -92,25 +93,43 @@ export default function PublicCertificates() {
         style={{ marginTop: '-10px', marginBottom: '-40px' }}
       >
         <nav
-          className="bg-[#0e689c] flex items-center w-full max-w-[1100px] pointer-events-auto h-20"
+          className="bg-[#0e689c] flex w-full max-w-[1100px] pointer-events-auto h-20"
           style={{ clipPath: 'polygon(75px 0%, 100% 0%, 100% 100%, 0% 100%)' }}
         >
-          <ul className="flex items-center list-none m-0" style={{ paddingLeft: 80, paddingRight: 20 }}>
+          <ul className="flex items-center justify-center list-none m-0 w-full h-full" style={{ paddingLeft: 80 }}>
             {NAV_LINKS.map(({ label, href, active }) => (
-              <li key={label} className="relative">
+              <li key={label} className="relative h-full" style={{ listStyle: 'none' }}>
                 <a
                   href={href}
-                  className={`nav-link relative block no-underline font-semibold tracking-[0.3px] text-white/85 ${active ? 'is-active !text-white' : ''}`}
-                  style={{ fontSize: 16, padding: '24px 0', marginLeft: 16, marginRight: 16 }}
+                  onMouseEnter={() => setHoveredNav(label)}
+                  onMouseLeave={() => setHoveredNav(null)}
+                  className="relative flex items-center justify-center h-full no-underline font-semibold tracking-[0.3px] transition-colors"
+                  style={{
+                    fontSize: 16,
+                    padding: '0',
+                    marginLeft: 16,
+                    marginRight: 16,
+                    color: (active || hoveredNav === label) ? '#ffffff' : 'rgba(255,255,255,0.85)',
+                  }}
                 >
+                  {/* Top orange bar — top:-10px like original #menu_header_3 > .cz > a:before */}
+                  <span style={{
+                    position: 'absolute',
+                    top: '-10px',
+                    left: 0,
+                    height: '5px',
+                    backgroundColor: '#ff9018',
+                    width: (active || hoveredNav === label) ? '100%' : '0%',
+                    transition: 'width 0.28s ease',
+                  }} />
                   {label}
                 </a>
               </li>
             ))}
             {/* Search Icon */}
-            <li className="relative ml-4">
+            <li className="relative ml-2 flex items-center h-full" style={{ listStyle: 'none' }}>
               <a href="#" className="text-white hover:text-[#ff9018] transition-colors">
-                <i className="fa-solid fa-search" style={{ fontSize: '20px' }}></i>
+                <i className="fa-solid fa-search" style={{ fontSize: '18px' }}></i>
               </a>
             </li>
           </ul>
@@ -158,7 +177,7 @@ export default function PublicCertificates() {
       {/* ─────────────────────────────────────────────
           HERO / SLIDER
       ───────────────────────────────────────────── */}
-      <div className="relative w-full overflow-hidden flex-shrink-0" style={{ height: 'auto', minHeight: 400, backgroundColor: '#01131c' }}>
+      <div className="relative w-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ height: 'auto', minHeight: 400, backgroundColor: '#01131c' }}>
         <img
           src="https://correctsolution.net/wp-content/uploads/2019/11/slide1.jpg"
           alt="Hero"
@@ -167,7 +186,7 @@ export default function PublicCertificates() {
         />
         <div className="absolute inset-0" style={{ background: 'rgba(1,19,28,0.2)' }} />
 
-        <div className="relative z-10 max-w-[1200px] mx-auto pt-[140px] lg:pt-[190px] pb-[80px] lg:pb-[120px] px-6 lg:px-[50px]">
+        <div className="relative z-10 text-center w-full px-6">
           <h1
             className="slide-in m-0 text-white uppercase text-[36px] lg:text-[46px]"
             style={{ fontWeight: 700, fontFamily: 'Raleway, sans-serif', letterSpacing: 1, lineHeight: 1.15 }}
