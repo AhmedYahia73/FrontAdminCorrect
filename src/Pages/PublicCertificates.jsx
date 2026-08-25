@@ -90,7 +90,7 @@ export default function PublicCertificates() {
       ───────────────────────────────────────────── */}
       <div 
         className="hidden lg:flex relative justify-end z-40 pointer-events-none"
-        style={{ marginTop: '-10px', marginBottom: '-40px' }}
+        style={{ marginBottom: '-40px' }}
       >
         <nav
           className="bg-[#0e689c] flex w-full max-w-[1100px] pointer-events-auto h-20"
@@ -100,28 +100,22 @@ export default function PublicCertificates() {
             {NAV_LINKS.map(({ label, href, active }) => (
               <li
                 key={label}
-                className="h-full flex items-center"
-                style={{
-                  listStyle: 'none',
-                  position: 'relative',
-                  /* Orange bar via background-image — not affected by clip-path */
-                  backgroundImage: 'linear-gradient(#ff9018, #ff9018)',
-                  backgroundSize: (active || hoveredNav === label) ? '100% 5px' : '0% 5px',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'left top',
-                  transition: 'background-size 0.28s ease',
-                }}
+                className="relative h-full flex items-center"
+                style={{ listStyle: 'none' }}
                 onMouseEnter={() => setHoveredNav(label)}
                 onMouseLeave={() => setHoveredNav(null)}
               >
+                {/* Orange bar */}
+                <div 
+                  className="absolute top-0 left-0 h-[5px] bg-[#ff9018] transition-all duration-300 ease-in-out"
+                  style={{ width: (active || hoveredNav === label) ? '100%' : '0%' }}
+                />
                 <a
                   href={href}
                   className="flex items-center justify-center h-full no-underline font-semibold tracking-[0.3px] transition-colors"
                   style={{
                     fontSize: 16,
-                    padding: '0',
-                    marginLeft: 16,
-                    marginRight: 16,
+                    padding: '0 16px',
                     color: (active || hoveredNav === label) ? '#ffffff' : 'rgba(255,255,255,0.85)',
                   }}
                 >
@@ -130,7 +124,7 @@ export default function PublicCertificates() {
               </li>
             ))}
             {/* Search Icon */}
-            <li className="relative ml-2 flex items-center h-full" style={{ listStyle: 'none' }}>
+            <li className="relative flex items-center h-full px-4" style={{ listStyle: 'none' }}>
               <a href="#" className="text-white hover:text-[#ff9018] transition-colors">
                 <i className="fa-solid fa-search" style={{ fontSize: '18px' }}></i>
               </a>
