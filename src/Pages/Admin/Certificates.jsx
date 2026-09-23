@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { apiClient } from '@/lib/axios';
 import { toast } from 'sonner';
+import { optimizeImages } from '@/utils/imageOptimizer';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -217,7 +218,29 @@ export default function Certificates() {
 
 function CertificateModal({ cert, onClose }) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const [progress, setProgress] = useState({ phase: '', current: 0, total: 0, percent: 0, message: '' });
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  
+  // Track existing images for edit mode
+  const [existingImages, setExistingImages] = useState(() => {
+    if (!cert) return [];
+    if (Array.isArray(cert.images_urls) && cert.images_urls.length > 0) {
+      // Map both url and relative path if available
+      let rawPaths = [];
+      try {
+        rawPaths = typeof cert.images === 'string' ? JSON.parse(cert.images) : (cert.images || []);
+      } catch (e) {
+        rawPaths = [];
+      }
+      return cert.images_urls.map((url, idx) => ({
+        url,
+        path: rawPaths[idx] || url
+      }));
+    }
+    return [];
+  });
+
+  const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: cert ? {
       company_name: cert.company_name,
       certificate_name: cert.certificate_name,
@@ -225,63 +248,251 @@ function CertificateModal({ cert, onClose }) {
     } : {}
   });
 
-  const mutation = useMutation({
-    mutationFn: async (data) => {
-      // For images, we should convert them to base64 if selected
-      const payload = { ...data, images: [] }; // Handle file to base64 logic if needed
-      
-      if (data.images_files && data.images_files.length > 0) {
-        const promises = Array.from(data.images_files).map(file => {
-          return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(file);
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      setSelectedFiles(Array.from(e.target.files));
+    }
+  };
+
+  const removeExistingImage = (indexToRemove) => {
+    setExistingImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const isBusy = progress.phase !== '';
+
+  const onSubmit = async (formData) => {
+    try {
+      // Validate that at least one image will exist
+      const totalImagesCount = existingImages.length + selectedFiles.length;
+      if (totalImagesCount === 0) {
+        toast.error('Please select at least one certificate image');
+        return;
+      }
+
+      let newUploadedPaths = [];
+
+      // 1. Optimize & Upload new images if any are selected
+      if (selectedFiles.length > 0) {
+        // Step 1A: Optimize images in browser (resize large camera photos)
+        setProgress({
+          phase: 'optimizing',
+          percent: 5,
+          message: `Optimizing ${selectedFiles.length} images...`
+        });
+
+        const optimizedFiles = await optimizeImages(selectedFiles, (current, total) => {
+          setProgress({
+            phase: 'optimizing',
+            percent: Math.round((current / total) * 30),
+            message: `Optimizing image ${current} of ${total}...`
           });
         });
-        payload.images = await Promise.all(promises);
+
+        // Step 1B: Upload in small batches (6 files per batch)
+        const BATCH_SIZE = 6;
+        const totalBatches = Math.ceil(optimizedFiles.length / BATCH_SIZE);
+
+        for (let i = 0; i < optimizedFiles.length; i += BATCH_SIZE) {
+          const batch = optimizedFiles.slice(i, i + BATCH_SIZE);
+          const batchIndex = Math.floor(i / BATCH_SIZE) + 1;
+          const startPercent = 30 + Math.round((i / optimizedFiles.length) * 60);
+
+          setProgress({
+            phase: 'uploading',
+            percent: startPercent,
+            message: `Uploading batch ${batchIndex} of ${totalBatches} (${batch.length} images)...`
+          });
+
+          const batchFormData = new FormData();
+          batch.forEach((f) => batchFormData.append('images', f));
+
+          const uploadRes = await apiClient.post('/admin/certificate/upload-images', batchFormData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+
+          const paths = uploadRes.data?.data?.paths || [];
+          newUploadedPaths.push(...paths);
+        }
       }
 
-      delete payload.images_files;
+      // Step 2: Combine kept existing images with newly uploaded paths
+      const keptPaths = existingImages.map(img => img.path);
+      const allFinalImages = [...keptPaths, ...newUploadedPaths];
+
+      // Step 3: Finalize Certificate (Instant lightweight JSON call)
+      setProgress({
+        phase: 'saving',
+        percent: 95,
+        message: 'Saving certificate details...'
+      });
+
+      const payload = {
+        company_name: formData.company_name,
+        certificate_name: formData.certificate_name,
+        date: formData.date,
+        images: allFinalImages
+      };
 
       if (cert) {
-        return apiClient.put(`/admin/certificate/${cert.id}`, payload);
+        await apiClient.put(`/admin/certificate/${cert.id}`, payload);
+        toast.success('Certificate updated successfully');
+      } else {
+        await apiClient.post('/admin/certificate', payload);
+        toast.success('Certificate created successfully');
       }
-      return apiClient.post('/admin/certificate', payload);
-    },
-    onSuccess: () => {
-      toast.success(cert ? 'Updated successfully' : 'Added successfully');
+
+      setProgress({ phase: 'done', percent: 100, message: 'Done!' });
       queryClient.invalidateQueries({ queryKey: ['certificates'] });
       onClose();
-    },
-    onError: (err) => {
-      toast.error(err.response?.data?.message || 'An error occurred');
+    } catch (err) {
+      console.error('Upload/Save error:', err);
+      toast.error(err.response?.data?.message || err.message || 'An error occurred during save');
+      setProgress({ phase: '', current: 0, total: 0, percent: 0, message: '' });
     }
-  });
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-xl p-6 w-full max-w-md border border-border">
-        <h2 className=" font-bold mb-4">{cert ? 'Edit Certificate' : 'Add Certificate'}</h2>
-        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+      <div className="bg-card rounded-2xl p-6 w-full max-w-lg border border-border shadow-xl max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-foreground">
+            {cert ? 'Edit Certificate' : 'Add Certificate'}
+          </h2>
+          <button 
+            type="button" 
+            onClick={onClose} 
+            disabled={isBusy}
+            className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 overflow-y-auto pr-1 flex-1">
           <div>
-            <label className="block text-sm mb-1">Company Name</label>
-            <input {...register('company_name', { required: 'Required' })} className="w-full border p-2 rounded" />
+            <label className="block text-sm font-medium mb-1.5 text-foreground">Company Name</label>
+            <input 
+              {...register('company_name', { required: 'Company name is required' })} 
+              disabled={isBusy}
+              placeholder="e.g. Acme Corp"
+              className="w-full border border-border bg-background p-2.5 rounded-lg focus:ring-1 focus:ring-primary outline-none text-sm" 
+            />
+            {errors.company_name && <p className="text-xs text-destructive mt-1">{errors.company_name.message}</p>}
           </div>
+
           <div>
-            <label className="block text-sm mb-1">Certificate Name</label>
-            <input {...register('certificate_name', { required: 'Required' })} className="w-full border p-2 rounded" />
+            <label className="block text-sm font-medium mb-1.5 text-foreground">Certificate Name</label>
+            <input 
+              {...register('certificate_name', { required: 'Certificate name is required' })} 
+              disabled={isBusy}
+              placeholder="e.g. ISO 9001:2015"
+              className="w-full border border-border bg-background p-2.5 rounded-lg focus:ring-1 focus:ring-primary outline-none text-sm" 
+            />
+            {errors.certificate_name && <p className="text-xs text-destructive mt-1">{errors.certificate_name.message}</p>}
           </div>
+
           <div>
-            <label className="block text-sm mb-1">Issue Date</label>
-            <input type="date" {...register('date', { required: 'Required' })} className="w-full border p-2 rounded" />
+            <label className="block text-sm font-medium mb-1.5 text-foreground">Issue Date</label>
+            <input 
+              type="date" 
+              {...register('date', { required: 'Issue date is required' })} 
+              disabled={isBusy}
+              className="w-full border border-border bg-background p-2.5 rounded-lg focus:ring-1 focus:ring-primary outline-none text-sm" 
+            />
+            {errors.date && <p className="text-xs text-destructive mt-1">{errors.date.message}</p>}
           </div>
+
+          {/* Existing Images (Edit mode) */}
+          {cert && existingImages.length > 0 && (
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-sm font-medium text-foreground">
+                  Current Images ({existingImages.length})
+                </label>
+                <span className="text-xs text-muted-foreground">Click x to remove</span>
+              </div>
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-36 overflow-y-auto p-2 border border-border rounded-lg bg-muted/30">
+                {existingImages.map((img, idx) => (
+                  <div key={idx} className="relative group rounded-md overflow-hidden border border-border aspect-square bg-muted">
+                    <img src={img.url} alt={`img-${idx}`} className="w-full h-full object-cover" />
+                    {!isBusy && (
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(idx)}
+                        className="absolute top-1 right-1 w-5 h-5 bg-destructive text-white rounded-full flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity"
+                        title="Remove image"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* New Images Selection */}
           <div>
-            <label className="block text-sm mb-1">Certificate Images</label>
-            <input type="file" multiple accept="image/*" {...register('images_files')} className="w-full border p-2 rounded" />
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-sm font-medium text-foreground">
+                {cert ? 'Add New Images (optional)' : 'Certificate Images'}
+              </label>
+              {selectedFiles.length > 0 && (
+                <span className="text-xs font-semibold text-primary">
+                  {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected
+                </span>
+              )}
+            </div>
+            
+            <input 
+              type="file" 
+              multiple 
+              accept="image/*" 
+              onChange={handleFileChange}
+              disabled={isBusy}
+              className="w-full text-sm border border-border file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer bg-background p-1.5 rounded-lg" 
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Supports selecting 50+ images at once. Images are automatically compressed and uploaded in batches.
+            </p>
           </div>
-          <div className="flex gap-2 justify-end mt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-muted rounded">Cancel</button>
-            <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-primary text-white rounded">Save</button>
+
+          {/* Progress Bar & Status */}
+          {isBusy && (
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 space-y-2">
+              <div className="flex justify-between items-center text-xs font-semibold text-primary">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                  {progress.message}
+                </span>
+                <span>{progress.percent}%</span>
+              </div>
+              <div className="w-full bg-primary/10 rounded-full h-2.5 overflow-hidden">
+                <div 
+                  className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-out" 
+                  style={{ width: `${progress.percent}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2 justify-end pt-3 border-t border-border mt-4">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              disabled={isBusy}
+              className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={isBusy} 
+              className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+            >
+              {isBusy && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>}
+              {cert ? 'Save Changes' : 'Create Certificate'}
+            </button>
           </div>
         </form>
       </div>
